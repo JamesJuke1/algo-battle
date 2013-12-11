@@ -17,9 +17,6 @@ std::ostream& operator<<(std::ostream& cout, State s)
 
 State find_longest_substring(std::string const &shorter, std::string const &longer)
 {
-    std::cout << "shorter: " << shorter << std::endl
-	      << "longer: " << longer << std::endl;
-
     int shorter_size = shorter.size();
     int longer_size = longer.size();
 
@@ -105,6 +102,9 @@ int main(int argc, char* argv[])
 
     std::string const &shorter = s1.size() < s2.size() ? s1 : s2;
     std::string const &longer = s1.size() >= s2.size() ? s1 : s2;
+
+    std::cout << "shorter: " << shorter << std::endl
+	      << "longer: " << longer << std::endl;
 
     State max_substring = find_longest_substring(shorter, longer);
 
