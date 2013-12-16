@@ -2,6 +2,7 @@
 #include <iostream>
 #include <ctime>
 #include <algorithm>
+#include "readfile.h"
 
 struct State
 {
@@ -92,26 +93,31 @@ State find_longest_substring(std::string const &shorter, std::string const &long
 
 int main(int argc, char* argv[])
 {
-    if (argc < 3)
+    if(argc < 2)
     {
-	return -1;
+        return -1;
     }
 
-    std::string s1 = argv[1];
-    std::string s2 = argv[2];
+    std::string filename = argv[1];
+    auto strings = ReadFile(filename);
 
-    std::string const &shorter = s1.size() < s2.size() ? s1 : s2;
-    std::string const &longer = s1.size() >= s2.size() ? s1 : s2;
+    for (int i = 0; i < strings.size(); i += 2)
+    {
+	auto s1 = strings[i];
+	auto s2 = strings[i + 1];
+	std::string const &shorter = s1.size() < s2.size() ? s1 : s2;
+	std::string const &longer = s1.size() >= s2.size() ? s1 : s2;
 
-    std::cout << "shorter: " << shorter << std::endl
-	      << "longer: " << longer << std::endl;
+	auto max_substring = find_longest_substring(shorter, longer);
 
-    State max_substring = find_longest_substring(shorter, longer);
+	std::cout << shorter.substr(max_substring.index_in_shorter, max_substring.length)
+		  << std::endl;
+    }
 
-    std::cout << "index in shorter: " << max_substring.index_in_shorter << std::endl
-	      << "substring length: " << max_substring.length << std::endl
-	      << shorter.substr(max_substring.index_in_shorter, max_substring.length)
-	      << std::endl;
+//    std::cout << "index in shorter: " << max_substring.index_in_shorter << std::endl
+//	      << "substring length: " << max_substring.length << std::endl
+//	      << shorter.substr(max_substring.index_in_shorter, max_substring.length)
+//	      << std::endl;
 
     return 0;
 }

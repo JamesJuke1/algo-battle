@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include "readfile.h"
+
 using namespace std;
 
 inline int FindLongestSubstring(const string& x, const string& y, string* outLongestSubstring)
@@ -57,53 +59,20 @@ inline int FindLongestSubstring(const string& x, const string& y, string* outLon
 
 int main(int argc, char* argv[])
 {
-	if(argc < 3)
+    if(argc < 2)
     {
         return -1;
     }
 
-    string s1 = argv[1];
-    string s2 = argv[2];
+    string filename = argv[1];
+    auto strings = ReadFile(filename);
 
+    for (int i = 0; i < strings.size(); i += 2)
+    {
 	string longestSubstring;
-	auto length = FindLongestSubstring(s1, s2, &longestSubstring);
+	auto length = FindLongestSubstring(strings[i], strings[i + 1], &longestSubstring);
 
-	cout << "substring length: " << length << std::endl
-              << longestSubstring << std::endl;
-	//ifstream fs("123.txt");
-	//if(fs.bad())
-	//{
-	//	cout << "file error" << endl;
-	//	char useless;
-	//	cin >> useless;
-	//	return -1;
-	//}
-
-	//vector<string> contents;
-	//while(!fs.eof())
-	//{
-	//	string content;
-	//	getline(fs, content);
-	//	auto p = content.find(',');
-	//	contents.push_back(content.substr(0, p));
-	//	p += sizeof(',');
-	//	contents.push_back(content.substr(p, content.size() - p));
-	//}
-
-	//fs.close();
-
-	//if(contents.size() % 2 != 0)
-	//{
-	//	cout << "file format error" << endl;
-	//	char useless;
-	//	cin >> useless;
-	//	return -1;
-	//}
-
-	//for(vector<string>::size_type i = 0; i < contents.size(); i += 2)
-	//{
-	//	cout << FindLongestSubstring(contents[i], contents[i + 1]) << endl;
-	//}
-
-	return 0;
+	cout << longestSubstring << std::endl;
+    }
+    return 0;
 }
