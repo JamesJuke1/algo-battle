@@ -28,8 +28,14 @@ inline int FindLongestSubstring(const string& x, const string& y, string* outLon
 		{
 			if(x[i] != y[offset + i])
 			{
+				if(currentLength > longest)
+				{
+					currentLongest = currentLength;
+					longest = currentLongest;
+					longestBegin = offset + i - currentLength;
+				}
+
 				currentLength = 0;
-				break;
 			}
 			else
 			{
