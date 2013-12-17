@@ -113,9 +113,9 @@ typedef struct LinkedNode {
  * 2. Dijkstra.
  *
  */
-int max_timespan(int timespans[], count) {
+int max_timespan(int timespans[], int count) {
     int max = 0;
-    for (int i = 1; i <= count; ++city)
+    for (int i = 1; i <= count; ++i)
 	max = timespans[i] > max ? timespans[i] : max;
     return max;
 }
@@ -152,10 +152,10 @@ int minimum_timespan_to_farthest_city(AdjacencyMatrix matrix, size_t cities_coun
 	    int city; int timespan; LinkedNode *prev;
 	} min_timespan_this_loop = {0, INT_MAX, NULL};
 
-	current_city_node = &cities_visited_head;
+	current_city_node = cities_visited_head;
 
 	while (current_city_node != NULL) {
-	    int current_city = visited_city_node->value;
+	    int current_city = current_city_node->value;
 	    LinkedNode *city_to_visit_node = cities_to_visit_head->next;
 	    if (city_to_visit_node == NULL) // All the cities are visited, exit.
 		return max_timespan(min_timespans, cities_count);
@@ -179,7 +179,7 @@ int minimum_timespan_to_farthest_city(AdjacencyMatrix matrix, size_t cities_coun
 	min_timespans[min_timespan_this_loop.city] = min_timespan_this_loop.timespan;
 	cities_visited_tail->next = min_timespan_this_loop.prev->next;
 	cities_visited_tail = cities_visited_tail->next;
-	min_timespan_this_loop.prev->next = min_timespan_this_loop->next->next;
+	min_timespan_this_loop.prev->next = min_timespan_this_loop.prev->next->next;
     }
     return -1;
 }
