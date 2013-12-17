@@ -18,7 +18,18 @@ def gen_string_pair():
     return (str1, str2), common_substring
 
 if __name__ == '__main__':
-    for i in xrange(10):
-        (s1, s2), common_substring = gen_string_pair()
-        print s1
-        print s2
+    result = []
+
+    with open('test_cases.txt', 'w') as f:
+        for i in xrange(100):
+            (s1, s2), common_substring = gen_string_pair()
+            f.write(s1)
+            f.write('\n')
+            f.write(s2)
+            f.write('\n')
+
+            result.append(common_substring)
+
+    with open('result.txt', 'w') as f:
+        f.write('\n'.join(result))
+        f.write('\n')
