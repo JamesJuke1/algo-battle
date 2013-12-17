@@ -26,87 +26,24 @@ Sections:
  */
 const int MAX_CITY_COUNT = 100;
 const unsigned int INT_MASK = 0xFFFFFFFF;
-const int INT_MAX = 0x8FFFFFFF;
+const int INT_MAX = 0x7FFFFFFF;
+const int UNREACHABLE = INT_MAX;
 const int CHAR_BITS_COUNT = 8;
 // Container for route connecting two cities DIRECTLY.
 typedef int AdjacencyMatrix[MAX_CITY_COUNT + 1][MAX_CITY_COUNT + 1];
-
-// Set, actually a bit array for integers.
-// CPU is fast enough for a small array.
-typedef struct IntSet {
-    char *bit_array;
-    size_t size;
-} IntSet;
-
-// Return 0 for success, otherwise failure.
-int set_init(IntSet* set, int max_int_value) {
-    set->size = max_int_value / CHAR_BITS_COUNT + 1;
-    set->bit_array = malloc(sizeof(char) * set->size);
-
-    if (set->bit_array == 0)
-	return -1;
-
-    memset(set->bit_array, 0, set->size);
-    return 0;
-}
-
-// Return 0 for added, otherwise failure or already existed.
-int set_add(IntSet set, int value) {
-    int byte_position = value >> CHAR_BITS_COUNT;
-    int bit_position = value & (INT_MASK >> (32 - CHAR_BITS_COUNT));
-    if (value / CHAR_BITS_COUNT >= set.size)
-	return -1;
-
-    // printf("set_add(%d) %x, %x, %x\n", value, byte_position, bit_position, set.bit_array[byte_position] & (1 << bit_position));
-    int has_value = set.bit_array[byte_position] & (1 << bit_position);
-    set.bit_array[byte_position] |= 1 << bit_position;
-    return !!has_value;
-}
-
-// Return 1 for yes, 0 for no, otherwise error.
-int set_has(IntSet set, int value) {
-    int byte_position = value >> CHAR_BITS_COUNT;
-    int bit_position = value & (INT_MASK >> (32 - CHAR_BITS_COUNT));
-    if (value / CHAR_BITS_COUNT >= set.size)
-	return -1;
-
-    // printf("set_has(%d) %x, %x, %x\n", value, byte_position, bit_position, set.bit_array[byte_position] & (1 << bit_position));
-    return !!(set.bit_array[byte_position] & (1 << bit_position));
-}
-
-void set_free(IntSet set) {
-    free(set.bit_array);
-}
-
-#ifdef UNIT_TEST
-
-int main(int argc, char* argv[]) {
-    IntSet set;
-    assert(set_init(&set, 100) == 0);
-    assert(set_add(set, 1) == 0);
-    assert(set_add(set, 2) == 0);
-    assert(set_add(set, 100) == 0);
-
-    // Added again;
-    assert(set_add(set, 100) > 0);
-
-    assert(set_has(set, 1) == 1);
-    assert(set_has(set, 2) == 1);
-    assert(set_has(set, 3) == 0);
-
-    assert(set_has(set, 100) == 1);
-    assert(set_has(set, 99) == 0);
-
-    assert(set_has(set, 55) == 0);
-    return 0;
-}
-
-#endif
 
 typedef struct LinkedNode {
     int value;
     struct LinkedNode *next;
 } LinkedNode;
+
+void free_linkednode(LinkedNode *head) {
+    while(head) {
+	LinkedNode *p = head->next;
+	free(head);
+	head = p;
+    }
+}
 
 /*
  *
@@ -124,20 +61,24 @@ int max_timespan(int timespans[], int count) {
 int minimum_timespan_to_farthest_city(AdjacencyMatrix matrix, size_t cities_count) {
     const int capital_city = 1;
 
+    // Mininal timespan from capital to cities.
     int min_timespans[MAX_CITY_COUNT + 1];
     memset(min_timespans, 0xFF, MAX_CITY_COUNT + 1);
 
     min_timespans[1] = 0;
 
+    // Visited cities, whose min_timespan is known.
     LinkedNode *cities_visited_head = malloc(sizeof(LinkedNode));
     cities_visited_head->value = capital_city;
     cities_visited_head->next = NULL;
     LinkedNode *cities_visited_tail = cities_visited_head;
 
+    // unvisited cities.
     LinkedNode *cities_to_visit_head = malloc(sizeof(LinkedNode));
     cities_to_visit_head->value = 0;
     cities_to_visit_head->next = NULL;
 
+    // All cities except capital are unvisited at beginning.
     LinkedNode *current_city_node = cities_to_visit_head;
     for (int city = 2; city <= cities_count; ++city) {
 	LinkedNode *new_node = malloc(sizeof(LinkedNode));
@@ -154,16 +95,37 @@ int minimum_timespan_to_farthest_city(AdjacencyMatrix matrix, size_t cities_coun
 
 	current_city_node = cities_visited_head;
 
+	// Loop all unvisited cities, select the most nearest one into cities_visited list.
 	while (current_city_node != NULL) {
-	    int current_city = current_city_node->value;
+	    const int current_city = current_city_node->value;
 	    LinkedNode *city_to_visit_node = cities_to_visit_head->next;
-	    if (city_to_visit_node == NULL) // All the cities are visited, exit.
-		return max_timespan(min_timespans, cities_count);
 
+	    // All the cities are visited, exit.
+	    if (city_to_visit_node == NULL)
+	    {
+		int r = max_timespan(min_timespans, cities_count);
+
+		// Cleanup resources.
+		free_linkednode(cities_visited_head);
+		free_linkednode(cities_to_visit_head);
+		return r;
+	    }
+
+	    // Loop all nearby cities of current city, update their min_timespans.
 	    LinkedNode *prev_city_to_visit_node = cities_to_visit_head;
 	    while (city_to_visit_node != NULL) {
-		int city_to_visit = city_to_visit_node->value;
+		const int city_to_visit = city_to_visit_node->value;
+
+		// Unreachable, then skip
+		if (matrix[current_city][city_to_visit] == UNREACHABLE) {
+		    prev_city_to_visit_node = city_to_visit_node;
+		    city_to_visit_node = city_to_visit_node->next;
+		    continue;
+		}
+
 		int timespan = matrix[current_city][city_to_visit] + min_timespans[current_city];
+
+		// Update min_timespan_this_loop if required.
 		if (timespan < min_timespan_this_loop.timespan) {
 		    min_timespan_this_loop.city = city_to_visit;
 		    min_timespan_this_loop.timespan = timespan;
@@ -177,17 +139,58 @@ int minimum_timespan_to_farthest_city(AdjacencyMatrix matrix, size_t cities_coun
 	}
 
 	min_timespans[min_timespan_this_loop.city] = min_timespan_this_loop.timespan;
+
+	// Moved selected city node from "to_visit" list to "visited" list.
 	cities_visited_tail->next = min_timespan_this_loop.prev->next;
 	cities_visited_tail = cities_visited_tail->next;
+	cities_visited_tail->next = NULL;
+
 	min_timespan_this_loop.prev->next = min_timespan_this_loop.prev->next->next;
     }
-    return -1;
+
+    // Cleanup resources.
+    free_linkednode(cities_visited_head);
+    free_linkednode(cities_to_visit_head);
+    return UNREACHABLE;
 }
 
-#ifndef UNIT_TEST
+int read_int() {
+    char input[30];
+    int number;
+    for (int i = 0; i < sizeof(input) - 1; i++)
+    {
+	char c = (char)getc(stdin);
+	if (c == 'x' || c == 'X')
+	    return UNREACHABLE;
+
+	if (c < '0' || '9' < c)
+	{
+	    if (i == 0) continue;
+	    input[i] = 0;
+	    return atoi(input);
+	}
+	input[i] = c;
+    }
+
+    input[29] = 0;
+    return atoi(input);
+}
 
 int main(int argc, char* argv[]) {
+    int cities_count = read_int();
 
+    AdjacencyMatrix matrix;
+
+    // Input adjacency matrix.
+    for (int source_city = 2; source_city <= cities_count; ++source_city) {
+	for (int dest_city = 1; dest_city < source_city; ++dest_city) {
+	    int timespan = read_int();
+	    matrix[source_city][dest_city] = timespan;
+	    matrix[dest_city][source_city] = timespan;
+	}
+    }
+
+    int min_timespan = minimum_timespan_to_farthest_city(matrix, cities_count);
+
+    printf("%d\n", min_timespan);
 }
-
-#endif
