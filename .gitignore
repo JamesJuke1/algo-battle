@@ -2,3 +2,5 @@
 *.out
 *.result
 *.dSYM
+*.result.txt
+

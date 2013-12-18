@@ -12,8 +12,10 @@ def gen_string_pair():
     common_substring = random_str(random.randint(20, 100))
 
     random_addition_str = lambda: random_str(random.randint(10, 20))
-    str1 = random_addition_str() + common_substring + random_addition_str()
-    str2 = random_addition_str() + common_substring + random_addition_str()
+    t1 = '%sA%sA%s'
+    t2 = '%sB%sB%s'
+    str1 = t1 % (random_addition_str(), common_substring, random_addition_str())
+    str2 = t2 % (random_addition_str(), common_substring, random_addition_str())
 
     return (str1, str2), common_substring
 
